@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .info h2, .form h2 {
+            color: #555;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: #333;
+        }
+
+        .form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #28a745;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Debug Information</h1>
+        </header>
+        <section class="info">
+            <h2>Server Information</h2>
+            <ul>
+                <li><strong>Server Name:</strong> lite-server</li>
+                <li><strong>Server Time:</strong> <span id="server-time"></span></li>
+            </ul>
+        </section>
+        <section class="info">
+            <h2>Client Information</h2>
+            <ul>
+                <li><strong>User Agent:</strong> <span id="user-agent"></span></li>
+            </ul>
+        </section>
+        <section class="form">
+            <h2>Submit Debug Data</h2>
+            <form id="debug-form" action="/submit" method="POST">
+                <label for="debug-message">Message:</label>
+                <textarea id="debug-message" name="message" rows="4" required></textarea>
+                <button type="submit">Submit</button>
+            </form>
+        </section>
+    </div>
+    <script>
+        document.getElementById('server-time').textContent = new Date().toLocaleString();
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+
+        document.getElementById('debug-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const message = document.getElementById('debug-message').value;
+            alert('Debug data submitted: ' + message);
+
+            document.cookie = "debug_message=" + message;
+        });
+    </script>
+</body>
+</html>

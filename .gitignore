@@ -1,0 +1,4 @@
+.env_var
+.notes
+http_server.log
+ssh_honeypot.log
