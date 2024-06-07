@@ -2,3 +2,4 @@
 .notes
 http_server.log
 ssh_honeypot.log
+test.py
