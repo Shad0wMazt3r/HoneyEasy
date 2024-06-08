@@ -2,9 +2,10 @@ import http.server
 import socketserver
 import logging
 import os
+import env_loader
 
-PORT = 8080
-DIRECTORY = "www"
+PORT = env_loader.load("HTTP_PORT")
+DIRECTORY = env_loader.load("HTTP_DIRECTORY")
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
