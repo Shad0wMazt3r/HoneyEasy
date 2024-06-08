@@ -4,7 +4,7 @@ import logging
 import os
 import env_loader
 
-PORT = env_loader.load("HTTP_PORT")
+PORT = int(env_loader.load("HTTP_PORT"))
 DIRECTORY = env_loader.load("HTTP_DIRECTORY")
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
@@ -33,4 +33,6 @@ logging.info('Starting server...')
 
 with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
     print(f"Serving HTTP on port {PORT}")
+    print(f"Open http://localhost:{PORT}/ in your browser")
+    logging.info(f"Serving HTTP on port {PORT}")
     httpd.serve_forever()
