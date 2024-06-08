@@ -4,3 +4,4 @@ http_server.log
 ssh_honeypot.log
 test.py
 __pycache__/
+ssh_honeypot.key
