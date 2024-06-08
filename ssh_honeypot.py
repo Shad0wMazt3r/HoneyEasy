@@ -5,6 +5,9 @@ import os
 from paramiko import RSAKey, ServerInterface, AUTH_SUCCESSFUL, AUTH_FAILED, OPEN_SUCCEEDED
 import env_loader
 
+ssh_directory = env_loader.load("SSH_DIRECTORY")
+
+
 rsa_key_filename = env_loader.load("SSH_KEY")
 if os.path.exists(rsa_key_filename):
     host_key = RSAKey(filename=rsa_key_filename)
