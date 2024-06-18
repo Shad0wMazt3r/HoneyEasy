@@ -3,23 +3,26 @@ import paramiko
 import threading
 import os
 from paramiko import RSAKey, ServerInterface, AUTH_SUCCESSFUL, AUTH_FAILED, OPEN_SUCCEEDED
+import datetime
 import env_loader
+import logger
+
 
 ssh_directory = env_loader.load("SSH_DIRECTORY")
+motd = env_loader.banner_load("SSH")
+motd = motd.replace("\n", "\r\n")
+
+log_file = env_loader.load("SSH_LOG")
+
 
 
 rsa_key_filename = env_loader.load("SSH_KEY")
+
 if os.path.exists(rsa_key_filename):
     host_key = RSAKey(filename=rsa_key_filename)
 else:
     host_key = RSAKey.generate(2048)
     host_key.write_private_key_file(rsa_key_filename)
-
-motd = """
-UNAUTHORIZED ACCESS TO THIS SYSTEM IS PROHIBITED.
-\r\n
-IF YOU ARE LOOKING FOR RANSOM, I CAN TELL YOU I DON'T HAVE MONEY. BUT WHAT I DO HAVE IS A VERY PARTICULAR SET OF SKILLS, SKILLS I HAVE ACQUIRED OVER A VERY LONG CAREER, SKILLS THAT MAKE ME A NIGHTMARE FOR PEOPLE LIKE YOU. IF YOU LET MY COMPUTER SYSTEM GO NOW, THAT'LL BE THE END OF IT. I WILL NOT LOOK FOR YOU, I WILL NOT PURSUE YOU. BUT IF YOU DON'T, I WILL LOOK FOR YOU, I WILL FIND YOU, AND I WILL KILL YOU.
-\r\n"""
 
 class FakeSSHServer(ServerInterface):
     def __init__(self):
@@ -27,16 +30,13 @@ class FakeSSHServer(ServerInterface):
 
     def check_auth_password(self, username, password):
         log_entry = f"Username: {username}, Password: {password}\n"
-        with open("ssh_honeypot.log", "a") as log_file:
-            log_file.write(f"Login attempt - {log_entry}")
+        logger.log(f"Login attempt - {log_entry}, {datetime.datetime.now()}\n", log_file)
         
         if username == "root" and password == "toor":
-            with open("ssh_honeypot.log", "a") as log_file:
-                log_file.write("Successful login attempt\n")
+            logger.log(f"Login successful - {log_entry}, {datetime.datetime.now()}\n", log_file)
             return AUTH_SUCCESSFUL
         else:
-            with open("ssh_honeypot.log", "a") as log_file:
-                log_file.write("Failed login attempt\n")
+            logger.log(f"Login failed - {log_entry}, {datetime.datetime.now()}\n", log_file)
             return AUTH_FAILED
 
     def check_channel_request(self, kind, chanid):
@@ -78,19 +78,16 @@ def fake_shell(channel):
     while True:
         try:
             data = channel.recv(1024)
-            # print(data)
             if data == b'\x03':
                 return
             data = data.decode("utf-8")
-            # print(data)
             if not data:
                 break
-            
             for char in data:
                 if char in ['\r', '\n']:
                     if command_buffer:
                         print(command_buffer.encode())
-                        if command_buffer.lower() in ["exit", "quit", "q"]:
+                        if command_buffer in ["exit", "quit", "q"]:
                             channel.send("\n\rExiting...\n\r")
                             return
                         elif command_buffer == "whoami":
@@ -100,6 +97,7 @@ def fake_shell(channel):
                             channel.send("\n\rruid=0(root) gid=0(root)\n\r")
                             return
                         elif command_buffer == "uname -a":
+                            # server_uname_a = "Linux lite-server 5.4.0-109-generic #123-Ubuntu SMP" + ADD DATE TIME HERE +"x86_64 x86_64 x86_64 GNU/Linux\n\r"
                             channel.send("\n\rLinux lite-server 5.4.0-109-generic #123-Ubuntu SMP Thu Oct 22 22:39:06 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux\n\r")
                             return
                         elif command_buffer == "id -u":
@@ -117,7 +115,7 @@ def fake_shell(channel):
 
                         command_buffer = ""
                         channel.send("root> ")
-                    else:  # Empty command buffer
+                    else:
                         channel.send("\n\rroot> ")
                 else:
                     command_buffer += char
