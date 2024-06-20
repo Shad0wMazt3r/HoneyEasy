@@ -7,7 +7,6 @@ import datetime
 import env_loader
 import logger
 
-
 ssh_directory = env_loader.load("SSH_DIRECTORY")
 motd = env_loader.banner_load("SSH")
 motd = motd.replace("\n", "\r\n")
@@ -22,7 +21,7 @@ else:
     host_key = RSAKey.generate(2048)
     host_key.write_private_key_file(rsa_key_filename)
 
-# logged_in_username = ""
+logged_in_username = ""  # Declared as a global variable
 
 def read_creds():
     file_name = env_loader.load("SSH_CREDS")
@@ -36,6 +35,7 @@ class FakeSSHServer(ServerInterface):
         self.event = threading.Event()
 
     def check_auth_password(self, username, password):
+        global logged_in_username
         log_entry = f"Username: {username}, Password: {password}\n"
         logger.log(f"Login attempt - {log_entry}{datetime.datetime.now()}\n", log_file)
         
@@ -47,7 +47,7 @@ class FakeSSHServer(ServerInterface):
                 logged_in_username = username
                 return AUTH_SUCCESSFUL
         logger.log(f"Login failed - {log_entry}{datetime.datetime.now()}\n", log_file)
-
+        return AUTH_FAILED  # Added missing return statement
 
     def check_channel_request(self, kind, chanid):
         if kind == "session":
@@ -75,15 +75,15 @@ def handle_connection(client_socket):
                 channel.close()
                 return
             channel.send(motd)
-            fake_shell(channel)
+            fake_shell(channel, logged_in_username)  # Pass the logged_in_username
             channel.close()
     except Exception as e:
         print(f"Error: {e}")
     finally:
         transport.close()
 
-def fake_shell(channel):
-    prompt = logged_in_username + ">"
+def fake_shell(channel, username):  # Add username parameter
+    prompt = username + ">"
     channel.send(prompt)
     command_buffer = ""
     while True:
@@ -102,32 +102,31 @@ def fake_shell(channel):
                             channel.send("\n\rExiting...\n\r")
                             return
                         elif command_buffer == "whoami":
-                            channel.send("\n\rroot\n\r")
-                            return
+                            channel.send(f"\n\r{username}\n\r")  # Use username for whoami
                         elif command_buffer == "id":
-                            channel.send("\n\rruid=0(root) gid=0(root)\n\r")
-                            return
+                            channel.send(f"\n\ruid=0({username}) gid=0({username})\n\r")  # Use username for id
                         elif command_buffer == "uname -a":
-                            # server_uname_a = "Linux lite-server 5.4.0-109-generic #123-Ubuntu SMP" + ADD DATE TIME HERE +"x86_64 x86_64 x86_64 GNU/Linux\n\r"
+                            # TODO: Fix the datetime
                             channel.send("\n\rLinux lite-server 5.4.0-109-generic #123-Ubuntu SMP Thu Oct 22 22:39:06 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux\n\r")
-                            return
                         elif command_buffer == "id -u":
                             channel.send("\n\r0\n\r")
-                            return
                         elif command_buffer == "id -g":
                             channel.send("\n\r0\n\r")
-                            return
                         elif command_buffer == "pwd":
                             channel.send("\n\r/\n\r")
-                            return
-                        channel.send(f"\n\r{command_buffer}: command not found\n\r")
-                        with open("ssh_honeypot.log", "a") as log_file:
-                            log_file.write(f"Command executed: {command_buffer}\n")
-
+                        else:
+                            channel.send(f"\n\r{command_buffer}: command not found\n\r")
+                            with open("ssh_honeypot.log", "a") as log_file:
+                                log_file.write(f"Command executed: {command_buffer}\n")
                         command_buffer = ""
-                        channel.send("root> ")
+                        channel.send(prompt)  # Continue with the same prompt
                     else:
-                        channel.send("\n\rroot> ")
+                        channel.send("\n\r" + prompt)
+                elif char in ['\x08', '\x7f']:  # Handle backspace
+                    if command_buffer:
+                        command_buffer = command_buffer[:-1]
+                        # Move cursor back, overwrite with space, move cursor back again
+                        channel.send('\b \b')
                 else:
                     command_buffer += char
                     channel.send(char)
