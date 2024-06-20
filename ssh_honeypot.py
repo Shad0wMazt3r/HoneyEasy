@@ -14,8 +14,6 @@ motd = motd.replace("\n", "\r\n")
 
 log_file = env_loader.load("SSH_LOG")
 
-
-
 rsa_key_filename = env_loader.load("SSH_KEY")
 
 if os.path.exists(rsa_key_filename):
@@ -24,20 +22,32 @@ else:
     host_key = RSAKey.generate(2048)
     host_key.write_private_key_file(rsa_key_filename)
 
+# logged_in_username = ""
+
+def read_creds():
+    file_name = env_loader.load("SSH_CREDS")
+    with open(file_name, "r") as f:
+        for line in f:
+            username, password = line.strip().split(":")
+            yield username, password
+
 class FakeSSHServer(ServerInterface):
     def __init__(self):
         self.event = threading.Event()
 
     def check_auth_password(self, username, password):
         log_entry = f"Username: {username}, Password: {password}\n"
-        logger.log(f"Login attempt - {log_entry}, {datetime.datetime.now()}\n", log_file)
+        logger.log(f"Login attempt - {log_entry}{datetime.datetime.now()}\n", log_file)
         
-        if username == "root" and password == "toor":
-            logger.log(f"Login successful - {log_entry}, {datetime.datetime.now()}\n", log_file)
-            return AUTH_SUCCESSFUL
-        else:
-            logger.log(f"Login failed - {log_entry}, {datetime.datetime.now()}\n", log_file)
-            return AUTH_FAILED
+        creds = read_creds()
+
+        for uname, passwd in creds:
+            if username == uname and password == passwd:
+                logger.log(f"Login successful - {log_entry}{datetime.datetime.now()}\n", log_file)
+                logged_in_username = username
+                return AUTH_SUCCESSFUL
+        logger.log(f"Login failed - {log_entry}{datetime.datetime.now()}\n", log_file)
+
 
     def check_channel_request(self, kind, chanid):
         if kind == "session":
@@ -73,7 +83,8 @@ def handle_connection(client_socket):
         transport.close()
 
 def fake_shell(channel):
-    channel.send("root> ")
+    prompt = logged_in_username + ">"
+    channel.send(prompt)
     command_buffer = ""
     while True:
         try:
