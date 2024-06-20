@@ -1,0 +1,8 @@
+jake:mementomori
+root:toor
+john:password123!
+user1:secure#Pass1
+guest:guest@1234
+test:testPassword!56
+system:sysAdmin!88
+backup:backUp123!
