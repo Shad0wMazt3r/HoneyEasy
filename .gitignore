@@ -5,3 +5,5 @@ ssh_honeypot.log
 test.py
 __pycache__/
 ssh_honeypot.key
+logs/log_ssh
+logs/log_http
