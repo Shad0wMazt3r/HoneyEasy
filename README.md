@@ -22,4 +22,22 @@ HoneyEasy is intended to be run on debian-based distros. This includes, but is n
 
 A virtual machine with HoneyEasy already set up is provided here for your convenience: [INSERT LINK HERE](https://example.com)
 
-It is recommended to set up your own HoneyEasy virtual machine using a debian virtual machine and configuring it yourself. 
+Credentials
+```
+root:honey
+
+honeyeasy:honey
+```
+
+It is recommended to set up your own HoneyEasy virtual machine using a debian virtual machine and configuring it yourself.
+
+
+### Installation Steps
+
+1. Clone the repository:
+    `git clone https://github.com/Shad0wMazt3r/HoneyEasy.git`
+2. Run the setup script:
+    `sudo bash setup.sh`
+3. Enjoy
+
+Note: You can use `bash run.sh` after running the setup once. `setup.sh` does that anyway, though. 
