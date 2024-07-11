@@ -7,3 +7,4 @@ __pycache__/
 ssh_honeypot.key
 logs/log_ssh
 logs/log_http
+testing/
