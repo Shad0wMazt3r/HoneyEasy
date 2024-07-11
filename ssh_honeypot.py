@@ -21,7 +21,7 @@ else:
     host_key = RSAKey.generate(2048)
     host_key.write_private_key_file(rsa_key_filename)
 
-logged_in_username = ""  # Declared as a global variable
+logged_in_username = ""
 
 def read_creds():
     file_name = env_loader.load("SSH_CREDS")
@@ -29,6 +29,9 @@ def read_creds():
         for line in f:
             username, password = line.strip().split(":")
             yield username, password
+
+def format_text(text):
+    return text.replace("\n", "\r\n")
 
 class FakeSSHServer(ServerInterface):
     def __init__(self):
@@ -47,7 +50,7 @@ class FakeSSHServer(ServerInterface):
                 logged_in_username = username
                 return AUTH_SUCCESSFUL
         logger.log(f"Login failed - {log_entry}{datetime.datetime.now()}\n", log_file)
-        return AUTH_FAILED  # Added missing return statement
+        return AUTH_FAILED
 
     def check_channel_request(self, kind, chanid):
         if kind == "session":
@@ -75,17 +78,18 @@ def handle_connection(client_socket):
                 channel.close()
                 return
             channel.send(motd)
-            fake_shell(channel, logged_in_username)  # Pass the logged_in_username
+            fake_shell(channel, logged_in_username)
             channel.close()
     except Exception as e:
         print(f"Error: {e}")
     finally:
         transport.close()
 
-def fake_shell(channel, username):  # Add username parameter
+def fake_shell(channel, username):
     prompt = username + ">"
     channel.send(prompt)
     command_buffer = ""
+    command_history = [ ]
     while True:
         try:
             data = channel.recv(1024)
@@ -102,9 +106,9 @@ def fake_shell(channel, username):  # Add username parameter
                             channel.send("\n\rExiting...\n\r")
                             return
                         elif command_buffer == "whoami":
-                            channel.send(f"\n\r{username}\n\r")  # Use username for whoami
+                            channel.send(f"\n\r{username}\n\r")
                         elif command_buffer == "id":
-                            channel.send(f"\n\ruid=0({username}) gid=0({username})\n\r")  # Use username for id
+                            channel.send(f"\n\ruid=0({username}) gid=0({username})\n\r")
                         elif command_buffer == "uname -a":
                             # TODO: Fix the datetime
                             channel.send("\n\rLinux lite-server 5.4.0-109-generic #123-Ubuntu SMP Thu Oct 22 22:39:06 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux\n\r")
@@ -114,22 +118,46 @@ def fake_shell(channel, username):  # Add username parameter
                             channel.send("\n\r0\n\r")
                         elif command_buffer == "pwd":
                             channel.send("\n\r/\n\r")
+                        elif command_buffer == "ls":
+                            files = os.listdir(ssh_directory)
+                            channel.send("\n\r" + "\n\r".join(files) + "\n\r")
+                        elif command_buffer.startswith("cd "):
+                            channel.send("\n\r")
+                        elif command_buffer.startswith("cat "):
+                            command_buffer = command_buffer.replace("cat ", "", 1)
+                            command_buffer = command_buffer.replace("/", "")
+                            command_buffer = command_buffer.replace("\\", "")
+                            if command_buffer in os.listdir(ssh_directory):
+                                filename = ssh_directory + "/" + command_buffer
+                                with open(filename, "r") as f:
+                                    channel.send("\n\r")
+                                    channel.send(format_text(f.read()))
+                                    channel.send("\n\r")
+                            else:
+                                channel.send("\n\r")
+                                channel.send("cat: ")
+                                channel.send(command_buffer)
+                                channel.send(": No such file or directory\n\r")
                         else:
                             channel.send(f"\n\r{command_buffer}: command not found\n\r")
                             with open("ssh_honeypot.log", "a") as log_file:
                                 log_file.write(f"Command executed: {command_buffer}\n")
                         command_buffer = ""
-                        channel.send(prompt)  # Continue with the same prompt
+                        channel.send(prompt)
                     else:
                         channel.send("\n\r" + prompt)
                 elif char in ['\x08', '\x7f']:  # Handle backspace
-                    if command_buffer:
+                    if command_buffer != '':
                         command_buffer = command_buffer[:-1]
                         # Move cursor back, overwrite with space, move cursor back again
                         channel.send('\b \b')
+                elif char in ['\x1b[A']:
+                    # Move cursor up
+                    channel.send(command_history[-1])
                 else:
                     command_buffer += char
                     channel.send(char)
+                command_history.append(command_buffer)
         except Exception as e:
             break
 
