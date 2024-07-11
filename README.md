@@ -20,12 +20,16 @@ HoneyEasy has an easy set up script. However, a few cautionary steps must be tak
 
 HoneyEasy is intended to be run on debian-based distros. This includes, but is not limited to: Debian, Ubuntu, Linux Mint, Kali Linux, Parrot OS, Raspberry Pi OS etc.
 
-A virtual machine with HoneyEasy already set up is provided here for your convenience: [INSERT LINK HERE](https://example.com)
+A virtual machine with HoneyEasy already set up is provided here for your convenience: [Click Here](https://github.com/Shad0wMazt3r/HoneyEasy/releases/tag/v0.1.0)
 
 Credentials
 ```
 root:honey
+```
 
+A second user is set up for testing
+
+```
 honeyeasy:honey
 ```
 
