@@ -8,6 +8,7 @@ import env_loader
 import logger
 
 ssh_directory = env_loader.load("SSH_DIRECTORY")
+ssh_port = env_loader.load("SSH_PORT")
 motd = env_loader.banner_load("SSH")
 motd = motd.replace("\n", "\r\n")
 
@@ -161,7 +162,7 @@ def fake_shell(channel, username):
         except Exception as e:
             break
 
-def start_server(host='0.0.0.0', port=22):
+def start_server(host='0.0.0.0', port=ssh_port):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((host, port))
