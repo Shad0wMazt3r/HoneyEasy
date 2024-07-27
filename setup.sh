@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 FILE=".installed"
 if [ ! -f "$FILE" ]; then
