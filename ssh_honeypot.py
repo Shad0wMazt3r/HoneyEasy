@@ -8,7 +8,7 @@ import env_loader
 import logger
 
 ssh_directory = env_loader.load("SSH_DIRECTORY")
-ssh_port = env_loader.load("SSH_PORT")
+ssh_port = int(env_loader.load("SSH_PORT"))
 motd = env_loader.banner_load("SSH")
 motd = motd.replace("\n", "\r\n")
 
