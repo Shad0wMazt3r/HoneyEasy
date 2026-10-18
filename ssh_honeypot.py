@@ -37,6 +37,7 @@ def format_text(text):
 class FakeSSHServer(ServerInterface):
     def __init__(self):
         self.event = threading.Event()
+        self.username = ""
 
     def check_auth_password(self, username, password):
         global logged_in_username
@@ -48,7 +49,7 @@ class FakeSSHServer(ServerInterface):
         for uname, passwd in creds:
             if username == uname and password == passwd:
                 logger.log(f"Login successful - {log_entry}{datetime.datetime.now()}\n", log_file)
-                logged_in_username = username
+                self.username = username
                 return AUTH_SUCCESSFUL
         logger.log(f"Login failed - {log_entry}{datetime.datetime.now()}\n", log_file)
         return AUTH_FAILED
@@ -79,7 +80,7 @@ def handle_connection(client_socket):
                 channel.close()
                 return
             channel.send(motd)
-            fake_shell(channel, logged_in_username)
+            fake_shell(channel, server.username)
             channel.close()
     except Exception as e:
         print(f"Error: {e}")
